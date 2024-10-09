@@ -1,0 +1,183 @@
+---
+title: "p8105 HW3"
+author: "Jianming Wang"
+date: 2024-10-8
+output: 
+  github_document
+---
+
+# Problem 1
+## Load the data
+
+First, library the needed packages and set my plot settings.
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(patchwork)
+```
+
+```{r}
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = '90%'
+)
+
+options(
+  ggplot2.continuous.color = 'viridis',
+  ggplot2.continuous.fill = 'viridis'
+)
+
+scale_color_discrete = scale_color_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+```{r}
+library(p8105.datasets)
+data("ny_noaa")
+```
+
+## Clean the data
+
+```{r}
+ny_noaa <- separate(ny_noaa,date, into= c("year","month","day"), sep = '-')
+```
+
+```{r}
+head(ny_noaa)
+summary(ny_noaa)
+```
+The data has 9 variables after seperating year, month and day, and has 2595176 observations. Variables id, year, month, day, tmax(Maximum temperature with unit tenths of degrees C) and tmin(Minimum temperature with unit tenths of degrees C) are characters, while variables prcp(Precipitation with unit tenths of mm), snow(Snowfall with unit mm), snwd(Snow depth with unit mm) are numeric.
+For convenience in analyzing, I convert year, mont, day, tmin and tmax to numeric variables. For the consistency of units, I change the unit of variables snow and snwd into tenths of mm.
+
+```{r}
+ny_noaa <- mutate(year = as.numeric(year), month = as.numeric(month), 
+                  day = as.numeric(day),
+                  ny_noaa,tmax = as.numeric(tmax),tmin = as.numeric(tmin),
+                  snow = 10*snow, snwd = 10*snwd)
+summary(ny_noaa)
+```
+```{r}
+ny_noaa|>
+  count(snow,sort = T)
+```
+
+For snowfall, the most commonly observed values are 0, with the number 2008508. That is beacause in most of time in each year, it doesn't snow.
+
+```{r}
+ny_noaa|>filter(snow<0)|>nrow()
+```
+
+What's more, there is an error in snowfall because snowfall is impossible to be negative. Considering the overall data of snowfall, I strongly believe a minus sign was added incorrectly, So I remove the minus sign.
+
+```{r}
+ny_noaa <- mutate(ny_noaa,snow = if_else(snow>0, snow, -snow))
+```
+
+## Drawing plot I
+
+```{r}
+ny_subset1 <- ny_noaa|>
+  filter(month %in% c(1,7))|>
+  group_by(id,year,month)|>
+  summarise(mean_tmax = mean(tmax,na.rm = T),.groups = 'keep')
+```
+
+```{r}
+p1 <- ny_subset1|>
+  filter(month == 1)|>
+  ggplot(aes(x = year, y = mean_tmax,color = id))+
+  geom_point()+
+  theme(legend.position='none')+
+  labs(
+    title = "Average tmax plot in January",
+    x = "year",
+    y = "average max temperature")
+p2 <- ny_subset1|>
+  filter(month == 7)|>
+  ggplot(aes(x = year, y = mean_tmax,color = id))+
+  geom_point()+
+  theme(legend.position='none')+
+  labs(
+    title = "Average tmax plot in July",
+    x = "year",
+    y = "average max temperature")
+p1+p2 #colors represent different stations
+```
+Through the 2 panel plot we can find that the average max temperatures in january are generally higher than in July, which means it is hotter in January than in July. There exist some outliers in both January and July, for example as shown in the plot, the blue bottom point in 1980s in January and the pink bottom point in 1980s in July.
+
+```{r}
+ny_subset1|>
+  ggplot(aes(x = as.character(month), y = mean_tmax))+
+  geom_boxplot()
+```
+Through the boxplot we can also find outliers, which are represented as black points.
+
+## Drawing plot II
+
+Because I changed the unit for snowfall from mm to tenths of mm, the range changes from 0~100 to 0~1000.
+```{r}
+p1 <- ny_noaa|>
+  ggplot(aes(x = tmin, y = tmax))+
+  geom_hex()+
+  theme(legend.position='right')+
+  labs(
+    title = "tmax vs tmin plot")
+p2 <- ny_noaa|>
+  filter(snow>0 & snow<1000)|>
+  ggplot(aes(x = as.character(year), y = snow,color = as.character(year)))+
+  geom_violin()+
+  theme(legend.position='none',
+        axis.text.x = element_text(angle = 30,vjust = 0.85,hjust = 0.75))+
+  labs(x = 'year',
+       y = 'snowfall/tenths of mm',
+    title = "snowfall distribution plot by year")
+p1/p2 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
