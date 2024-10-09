@@ -14,6 +14,7 @@ First, library the needed packages and set my plot settings.
 library(tidyverse)
 library(ggplot2)
 library(patchwork)
+library(ggridges)
 ```
 
 ```{r}
@@ -88,6 +89,7 @@ p1 <- ny_subset1|>
   filter(month == 1)|>
   ggplot(aes(x = year, y = mean_tmax,color = id))+
   geom_point()+
+  theme_minimal()+
   theme(legend.position='none')+
   labs(
     title = "Average tmax plot in January",
@@ -97,6 +99,7 @@ p2 <- ny_subset1|>
   filter(month == 7)|>
   ggplot(aes(x = year, y = mean_tmax,color = id))+
   geom_point()+
+  theme_minimal()+
   theme(legend.position='none')+
   labs(
     title = "Average tmax plot in July",
@@ -109,7 +112,8 @@ Through the 2 panel plot we can find that the average max temperatures in januar
 ```{r}
 ny_subset1|>
   ggplot(aes(x = as.character(month), y = mean_tmax))+
-  geom_boxplot()
+  geom_boxplot()+
+  theme_minimal()
 ```
 Through the boxplot we can also find outliers, which are represented as black points.
 
@@ -120,6 +124,7 @@ Because I changed the unit for snowfall from mm to tenths of mm, the range chang
 p1 <- ny_noaa|>
   ggplot(aes(x = tmin, y = tmax))+
   geom_hex()+
+  theme_minimal()+
   theme(legend.position='right')+
   labs(
     title = "tmax vs tmin plot")
@@ -127,8 +132,9 @@ p2 <- ny_noaa|>
   filter(snow>0 & snow<1000)|>
   ggplot(aes(x = as.character(year), y = snow,color = as.character(year)))+
   geom_violin()+
+  theme_minimal()+
   theme(legend.position='none',
-        axis.text.x = element_text(angle = 30,vjust = 0.85,hjust = 0.75))+
+        axis.text.x = element_text(angle = 45,vjust = 0.85,hjust = 0.75))+
   labs(x = 'year',
        y = 'snowfall/tenths of mm',
     title = "snowfall distribution plot by year")
@@ -191,6 +197,7 @@ p1 <- acc_data|>
   group_by(sex, education)|>
   summarise(number = sum(num), .groups = 'keep')|>
   ggplot(aes(x = education, y = number)) + 
+  theme_minimal()+
   theme(axis.text.x = element_text(angle = 30,vjust = 0.85,hjust = 0.75))+
   geom_col(aes(fill=sex), position = position_dodge2(preserve = 'single')) +
   geom_text(aes(label=number), 
@@ -202,6 +209,7 @@ p2 <- acc_data|>
   ggplot(aes(x = education)) +
   geom_bar(aes(fill = sex), 
                    position = 'fill')+
+  theme_minimal()+
   theme(axis.text.x = element_text(angle = 30,vjust = 0.85,hjust = 0.75))
 p1+p2
 ```
@@ -216,6 +224,7 @@ total_act <- acc_data|>
 ggplot(total_act, aes(x = age, y = total_activity, color = sex))+
   geom_point(alpha = .5) +
   geom_smooth(se = FALSE) + 
+  theme_minimal()+
   facet_grid(. ~ education)+
   labs(
     title = "Total activity comparison",
@@ -236,6 +245,7 @@ p1 <- acc_data|>
   ggplot(aes(x = hourtime, y = mean_MIMS_per_hour, color = sex))+
   geom_point(alpha = .5) +
   geom_smooth(se = FALSE) + 
+  theme_minimal()+
   theme(legend.position='bottom')+
   labs(
     title = "less than high school",
@@ -250,6 +260,7 @@ p2 <- acc_data|>
   ggplot(aes(x = hourtime, y = mean_MIMS_per_hour, color = sex))+
   geom_point(alpha = .5) +
   geom_smooth(se = FALSE) +
+  theme_minimal()+
   theme(legend.position='bottom')+
   labs(
     title = "high school equivalent",
@@ -264,6 +275,7 @@ p3 <- acc_data|>
   ggplot(aes(x = hourtime, y = mean_MIMS_per_hour, color = sex))+
   geom_point(alpha = .5) +
   geom_smooth(se = FALSE) + 
+  theme_minimal()+
   theme(legend.position='bottom')+
   labs(
     title = "more than high school",
@@ -276,30 +288,117 @@ Each observation has 1440 data points, which would result in too much data, a co
 There appears to be a clear upward shift in MIMS activity as education level increases. Those with higher education engage in more activity or have higher MMNS rates, especially noticeable among females in the "More than High School" group.
 Across all education levels, females generally exhibit higher MMNS rates, particularly after the peak hours, showing more consistent and sustained activity compared to males. All groups show increased activity from the early morning hours, with peaks typically occurring between hours 10-15. However, more educated individuals, particularly females, tend to maintain higher activity levels throughout the later hours of the day.
 
+# Problem 3
+## Import, clean, and tidy data
 
+```{r}
+jan2020 <- read_csv('./Jan 2020 Citi.csv')
+july2020 <- read_csv('./July 2020 Citi.csv')
+jan2024 <-read_csv('./Jan 2024 Citi.csv')
+july2024 <- read_csv('./July 2024 Citi.csv')
+```
+```{r}
+jan2020 <- jan2020|>
+  mutate(month = "January", year = "2020")
+jan2024 <- jan2024|>
+  mutate(month = "January", year = "2024")
+july2020 <- july2020|>
+  mutate(month = "July", year = "2020")
+july2024 <- july2024|>
+  mutate(month = "July", year = "2024")
+citibike <- bind_rows(jan2020, july2020, jan2024, july2024)
+```
 
+For data of each month, I add month and year as new columns and the merge them. The combined dataset has 99485 observations and 9 variables, including information about id of rides, rideable type, weekdays, total duration, start stations, destinations, member or casual, months and years.
 
+## Reader-friendly table
 
+```{r}
+read_table <- citibike|>
+  mutate(num = 1)|>
+  group_by(member_casual, year, month)|>
+  summarise(number_of_rides = sum(num), .groups = 'keep')
+read_table
+```
 
+As shown in the reader-friendly table, it has 8 rows and 4 variables, including member or casual, year, month and number of rides. The total numbers of casual riders riding in Jan. 2020, July 2020, Jan. 2024, July 2024 are respectively 984, 5637, 2108, 10894. The total numbers of Citi Bike members riding in Jan. 2020, July 2020, Jan. 2024, July 2024 are respectively 11436, 15411, 16753, 36262. In general, the number of casual riders is less than Citi Bike members.
 
+## Most popular starting stations in July 2024
 
+```{r}
+popular <- citibike|>
+  mutate(num = 1)|>
+  filter(year == 2024, month == 'July')|>
+  group_by(start_station_name)|>
+  summarise(number_of_rides = sum(num), .groups = 'keep')|>
+  arrange(desc(number_of_rides))|>
+  head(5)
+popular
+```
+The 5 most popular starting stations are Pier 61 at Chelsea Piers with 163 rides, University Pl & E 14 St with 155 rides, W 21 St & 6 Ave with 152 rides, West St & Chambers St with 150 rides and W 31 St & 7 Ave with 146 rides.
 
+## Investigate the effects of days of thr week, month and year
 
+```{r}
+Investigate <- citibike|>
+  group_by(weekdays, month, year)|>
+  summarise(median_of_duration = median(duration), .groups = 'keep')|>
+  mutate(weekdays = factor(weekdays, levels = c('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')))
+```
 
+First, I produced a table of median duration in terms of weekdays, month and year. Then I drew a plot for comparison.
 
+```{r}
+Investigate|>
+  ggplot(aes(x = weekdays, y = median_of_duration, colour = month, group = month)) + geom_line()+
+  theme_minimal()+
+theme(legend.position='bottom',
+      axis.text.x = element_text(angle = 30,vjust = 0.85,hjust = 0.75))+
+  facet_grid(. ~ year)+
+  labs(
+    title = "median duration comparison",
+    x = "weekday",
+    y = "median of duration")
+```
 
+As shown in the plot, July tends to have longer median duration compared to January in both years, suggesting a seasonal pattern. The day of the week with the highest median duration varies between Saturday and Sunday in July. January remains more consistent, with moderate increases in duration on the weekends but generally lower than July across all weekdays. Across years, the overall duration has a reduction from 2020 to 2024.
 
+## Distribution of duration in 2024
 
+```{r}
+p1 <- citibike|>
+  filter(year == '2024')|>
+  ggplot(aes(x = duration, y = member_casual, fill = rideable_type)) + 
+  geom_density_ridges(scale = .9, alpha = .4)+
+  theme_minimal()+
+  theme(legend.position='bottom')+
+  facet_grid(. ~ month)+
+  labs(
+    title = "distribution of duration",
+    x = "duration",
+    y = "membership status",
+    fill = "bike type")
+p1
+```
 
+The density plot shows the distribution of duration in terms of membership, month and bike type. The distribution is skewed and not clear because of some extremely large duration, so I drew another densiity plot without those large duration.
 
+```{r}
+p2 <- citibike|>
+  filter(year == '2024',
+         duration <90)|>
+  ggplot(aes(x = duration, y = member_casual, fill = rideable_type)) + 
+  geom_density_ridges(scale = .9, alpha = .4)+
+  theme_minimal()+
+  theme(legend.position='bottom')+
+  facet_grid(. ~ month)+
+  labs(
+    title = "distribution of duration",
+    x = "duration",
+    y = "membership status",
+    fill = 'bike type')
+p2
+```
 
-
-
-
-
-
-
-
-
-
-
+As shown in the plot, citi bike members appear to have more consistent, short-duration rides across both months, likely indicating regular, utilitarian usage. Casual riders show more seasonal variability, especially in July, with a greater proportion of longer-duration rides, suggesting more recreational or exploratory use.For members, the distribution of duration peaks around short ride times (0-15 minutes), with very few long-duration rides. 
+Electric bikes seem to be preferred for shorter rides, but in July, casual riders use them for longer trips compared to classic bikes. January shows shorter ride durations overall compared to July. This pattern likely reflects the colder weather in January, leading to fewer or shorter rides, especially for casual riders.
