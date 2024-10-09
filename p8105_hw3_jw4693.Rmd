@@ -1,5 +1,5 @@
 ---
-title: "p8105 HW3"
+title: "p8105 HW3 jw4693"
 author: "Jianming Wang"
 date: 2024-10-8
 output: 
@@ -132,27 +132,149 @@ p2 <- ny_noaa|>
   labs(x = 'year',
        y = 'snowfall/tenths of mm',
     title = "snowfall distribution plot by year")
-p1/p2 
+p1+p2+
+  plot_layout(heights = c(2.5,1))
 ```
 
+# Problem 2
+## Load, tidy, merge and organize
+
+```{r}
+
+```
+
+## Produce table and visualization
+
+```{r}
+demographic <- read_csv('./nhanes_covar.csv', skip = 4)
+accelerometer <- read_csv('./nhanes_accel.csv')
+```
+
+```{r}
+demographic <- demographic|>na.omit()
+acc_data <- left_join(demographic,accelerometer, by = 'SEQN')|>
+  pivot_longer(
+    min1:min1440,
+    names_to = "minute_interval",
+    values_to = "MIMS"
+  )|>
+  filter(age >= 21)|>
+  mutate(sex = factor(sex,labels = c('male','female')),
+         education = factor(education, labels = c('Less than high school','High school equivalent','More than high school')),
+         minute_interval = str_remove(minute_interval,'min'))
+```
+
+I merge the data and remove observations with age less than 21 or missing data in demographic data. Variable sex and education are set to be factors, repectively with levels "male, female" and "Less than high school, High school equivalent, More than high school". Also, I remove strings "min" from variable "minute_interval".
 
 
+```{r}
+num_data <- acc_data|>
+  select(SEQN,sex,education)|>
+  unique()|>
+  mutate(num = 1)|>
+  group_by(sex, education)|>
+  summarise(number = sum(num), .groups = 'keep')
+readable_data <- num_data|>
+  pivot_wider(
+    names_from = 'education',
+    values_from = 'number'
+  )
+readable_data
+```
+I first produce a table for numbers of men and women in different educational categories, and then use "pivot_wider" to produce a reader-friendly table.
+
+```{r}
+p1 <- acc_data|>
+  select(SEQN,sex,education)|>
+  unique()|>
+  mutate(num = 1)|>
+  group_by(sex, education)|>
+  summarise(number = sum(num), .groups = 'keep')|>
+  ggplot(aes(x = education, y = number)) + 
+  theme(axis.text.x = element_text(angle = 30,vjust = 0.85,hjust = 0.75))+
+  geom_col(aes(fill=sex), position = position_dodge2(preserve = 'single')) +
+  geom_text(aes(label=number), 
+            position = position_dodge2(width = 0.9, preserve = 'single'), 
+            vjust = -0.2, hjust = 0.5)
+p2 <- acc_data|>
+  select(SEQN,sex,education)|>
+  unique()|>
+  ggplot(aes(x = education)) +
+  geom_bar(aes(fill = sex), 
+                   position = 'fill')+
+  theme(axis.text.x = element_text(angle = 30,vjust = 0.85,hjust = 0.75))
+p1+p2
+```
+Through the plot wecan find that people with more than high school education have the highest percentage in both men and women. The number of men with less than high school education is less than women, and the number of men with high school equivalent education is more than women.
+
+## Total activities
+
+```{r}
+total_act <- acc_data|>
+  group_by(SEQN, age, sex, education)|>
+  summarise(total_activity = sum(MIMS), .groups = "keep")
+ggplot(total_act, aes(x = age, y = total_activity, color = sex))+
+  geom_point(alpha = .5) +
+  geom_smooth(se = FALSE) + 
+  facet_grid(. ~ education)+
+  labs(
+    title = "Total activity comparison",
+    x = "age",
+    y = "total activity")
+```
+In the graph, male data are shown in red and female data in blue. Overall, women's total activity is higher than men's across all ages in the right two graphs, with women's total activity being higher than men's up to about age 40 and lower than men's after age 40 in the left first graph. In terms of overall trends, people at all levels of education experience a decrease in total activity after about age of 60, and those with less than high school education have the highest total activity at around age of 20 and those with a high school equivalent education have the highest total activity at around age 40. People with more than high school education will remain at a relatively high level of total activity before the age of 60.
 
 
+## 3 panel plot
 
+```{r}
+p1 <- acc_data|>
+  filter(education == 'Less than high school')|>
+  mutate(hourtime = ceiling(as.numeric(minute_interval)/60))|>
+  group_by(SEQN, sex, hourtime)|>
+  summarise(mean_MIMS_per_hour = mean(MIMS), .groups = 'keep')|>
+  ggplot(aes(x = hourtime, y = mean_MIMS_per_hour, color = sex))+
+  geom_point(alpha = .5) +
+  geom_smooth(se = FALSE) + 
+  theme(legend.position='bottom')+
+  labs(
+    title = "less than high school",
+    x = "hour interval",
+    y = "mean MIMS per hour")
 
+p2 <- acc_data|>
+  filter(education == 'High school equivalent')|>
+  mutate(hourtime = ceiling(as.numeric(minute_interval)/60))|>
+  group_by(SEQN, sex, hourtime)|>
+  summarise(mean_MIMS_per_hour = mean(MIMS),.groups = 'keep')|>
+  ggplot(aes(x = hourtime, y = mean_MIMS_per_hour, color = sex))+
+  geom_point(alpha = .5) +
+  geom_smooth(se = FALSE) +
+  theme(legend.position='bottom')+
+  labs(
+    title = "high school equivalent",
+    x = "hour interval",
+    y = "mean MIMS per hour")
 
+p3 <- acc_data|>
+  filter(education == 'More than high school')|>
+  mutate(hourtime = ceiling(as.numeric(minute_interval)/60))|>
+  group_by(SEQN, sex, hourtime)|>
+  summarise(mean_MIMS_per_hour = mean(MIMS),.groups = 'keep')|>
+  ggplot(aes(x = hourtime, y = mean_MIMS_per_hour, color = sex))+
+  geom_point(alpha = .5) +
+  geom_smooth(se = FALSE) + 
+  theme(legend.position='bottom')+
+  labs(
+    title = "more than high school",
+    x = "hour interval",
+    y = "mean MIMS per hour")
+p1+p2+p3
+```
 
-
-
-
-
-
-
-
-
-
-
+Each observation has 1440 data points, which would result in too much data, a complicated picture, and the inability to fit a curve if plotted and fitted directly to the curve. Therefore, I averaged the MIMS for each hour to reduce the number of data points while retaining the trend information.
+There appears to be a clear upward shift in MIMS activity as education level increases. Those with higher education engage in more activity or have higher MMNS rates, especially noticeable among females in the "More than High School" group.
+Across all education levels, females generally exhibit higher MMNS rates, particularly after the peak hours, showing more consistent and sustained activity compared to males. All groups show increased activity from the early morning hours, with peaks typically occurring between hours 10-15. However, more educated individuals, particularly females, tend to maintain higher activity levels throughout the later hours of the day.
 
 
 
