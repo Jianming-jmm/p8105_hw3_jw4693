@@ -113,7 +113,10 @@ Through the 2 panel plot we can find that the average max temperatures in januar
 ny_subset1|>
   ggplot(aes(x = as.character(month), y = mean_tmax))+
   geom_boxplot()+
-  theme_minimal()
+  theme_minimal()+
+  labs(
+    x = "month",
+    y = "mean tmax")
 ```
 Through the boxplot we can also find outliers, which are represented as black points.
 
@@ -214,6 +217,24 @@ p2 <- acc_data|>
 p1+p2
 ```
 Through the plot wecan find that people with more than high school education have the highest percentage in both men and women. The number of men with less than high school education is less than women, and the number of men with high school equivalent education is more than women.
+
+```{r}
+acc_data|>
+  select(SEQN,sex,education,age)|>
+  unique()|>
+  ggplot(aes(y = age, x = education, color = education)) +
+  geom_boxplot()+
+  theme_minimal()+
+  theme(legend.position='bottom')+
+  facet_grid(. ~ sex)+
+  labs(
+    title = "Distribution of age",
+    x = "education",
+    y = "age")+
+   theme(axis.text.x = element_text(angle = 30,vjust = 0.85,hjust = 0.75))
+```
+The median age increases with higher education levels for both males and females. Males generally have a wider distribution of ages compared to females in each education category. 
+This plot suggests that individuals with lower education levels tend to be older. This might reflect patterns related to generational differences, where older individuals might have had less access to higher education. Additionally, the greater age variability in males might indicate a broader range of educational attainment across different ages in the male population compared to females.
 
 ## Total activities
 
