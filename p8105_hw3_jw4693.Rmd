@@ -344,7 +344,7 @@ read_table <- citibike|>
 read_table
 ```
 
-As shown in the reader-friendly table, it has 8 rows and 4 variables, including member or casual, year, month and number of rides. The total numbers of casual riders riding in Jan. 2020, July 2020, Jan. 2024, July 2024 are respectively 984, 5637, 2108, 10894. The total numbers of Citi Bike members riding in Jan. 2020, July 2020, Jan. 2024, July 2024 are respectively 11436, 15411, 16753, 36262. In general, the number of casual riders is less than Citi Bike members.
+As shown in the reader-friendly table, it has 4 rows and 4 variables, including number of member,number of casual, year and month. The total numbers of casual riders riding in Jan. 2020, July 2020, Jan. 2024, July 2024 are respectively 984, 5637, 2108, 10894. The total numbers of Citi Bike members riding in Jan. 2020, July 2020, Jan. 2024, July 2024 are respectively 11436, 15411, 16753, 36262. In general, the number of casual riders is less than Citi Bike members.
 
 ## Most popular starting stations in July 2024
 
