@@ -338,7 +338,9 @@ For data of each month, I add month and year as new columns and the merge them. 
 read_table <- citibike|>
   mutate(num = 1)|>
   group_by(member_casual, year, month)|>
-  summarise(number_of_rides = sum(num), .groups = 'keep')
+  summarise(number_of_rides = sum(num), .groups = 'keep')|>
+  pivot_wider(names_from = 'member_casual',
+              values_from = 'number_of_rides')
 read_table
 ```
 
